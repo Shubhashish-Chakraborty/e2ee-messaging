@@ -1,0 +1,9 @@
+name = "e2ee-messaging"
+main = "src/worker.py"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["python_workers"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "e2ee_db_dev"
+database_id = "9330e79a-f961-48f1-8870-29f904c9e49b"
