@@ -71,18 +71,22 @@ async def api_signup(req, env):
         return badResponse
     
     username = body.get("username")
-    email = body.get("email")
+    githubUrl = body.get("githubUrl")
     password = body.get("password")
     public_key = body.get("public_key")
 
-    if not username or not email or not password or not public_key:
-        return err("username, email, password, publicKey: Something is missing!")
+    if not username or not githubUrl or not password or not public_key:
+        return err("username, githubUrl, password, publicKey: Something is missing!")
+    
+    # github url validation:
+    if not githubUrl.startswith("https://github.com"):
+        return err("Invalid Github URL, it should start with: https://github.com")
     
     try:
         hashedPassword = HASH_PASSWORD(password, username, env.PEPPER)
         await env.DB.prepare(
-            "INSERT INTO users (username, email, password_hash, public_key) VALUES (?, ?, ?, ?)"
-        ).bind(username, email, hashedPassword, public_key).run()
+            "INSERT INTO users (username, githubUrl, password_hash, public_key) VALUES (?, ?, ?, ?)"
+        ).bind(username, githubUrl, hashedPassword, public_key).run()
 
     except Exception as e:
         if "UNIQUE" in str(e):
@@ -94,7 +98,7 @@ async def api_signup(req, env):
 async def api_get_users(req, env):
     try:
         res = await env.DB.prepare(
-            "SELECT id, username, email, public_key FROM users"
+            "SELECT id, username, githubUrl, public_key FROM users"
         ).all()
         userData = res.results.to_py() if res.results else []
         return ok({
