@@ -45,6 +45,19 @@ async def parse_json_object(req):
 
     return body, None
 
+_PBKDF2_IT = 100_000
+
+def _user_salt(username: str, pepper: str) -> bytes:
+    """Per-user PBKDF2 salt = SHA-256(pepper || username)."""
+    return hashlib.sha256(pepper.encode("utf-8") + username.encode("utf-8")).digest()
+
+def HASH_PASSWORD(password: str, username: str, pepper: str) -> str:
+    # PBKDF2-SHA256 with per-user derived salt
+    dk = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), _user_salt(username, pepper), _PBKDF2_IT
+    )
+    return base64.b64encode(dk).decode("ascii")
+
 ########
 
 async def api_home(request, env):
@@ -64,8 +77,32 @@ async def api_signup(req, env):
 
     if not username or not email or not password or not public_key:
         return err("username, email, password, publicKey: Something is missing!")
+    
+    try:
+        hashedPassword = HASH_PASSWORD(password, username, env.PEPPER)
+        await env.DB.prepare(
+            "INSERT INTO users (username, email, password_hash, public_key) VALUES (?, ?, ?, ?)"
+        ).bind(username, email, hashedPassword, public_key).run()
 
-    return ok(None, "SIGNUPED! successfully")
+    except Exception as e:
+        if "UNIQUE" in str(e):
+            return err("Username already exists in the database!", 409)
+        return err(f"Something went wrong!: {e}", 500)
+
+    return ok(None, f"{username} Successfully Registered!")
+
+async def api_get_users(req, env):
+    try:
+        res = await env.DB.prepare(
+            "SELECT id, username, email, public_key FROM users"
+        ).all()
+        userData = res.results.to_py() if res.results else []
+        return ok({
+            "users": userData
+        })
+    
+    except Exception as e:
+        return err(f"something went wrong! {e}", 500)
 
 async def _dispatch(request, env):
     path = urlparse(request.url).path
@@ -79,6 +116,9 @@ async def _dispatch(request, env):
     
     if path == "/api/auth/signup" and method == "POST":
         return await api_signup(request, env)
+    
+    if path == "/users" and method == "GET":
+        return await api_get_users(request, env)
     
 async def on_fetch(request, env):
     try:
