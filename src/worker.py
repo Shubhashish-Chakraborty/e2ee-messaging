@@ -87,7 +87,7 @@ async def api_signup(req, env):
     except Exception as e:
         if "UNIQUE" in str(e):
             return err("Username already exists in the database!", 409)
-        return err(f"Something went wrong!: {e}", 500)
+        return err(f"Something went wrong: {e}", 500)
 
     return ok(None, f"{username} Successfully Registered!")
 
@@ -102,7 +102,18 @@ async def api_get_users(req, env):
         })
     
     except Exception as e:
-        return err(f"something went wrong! {e}", 500)
+        return err(f"something went wrong: {e}", 500)
+    
+async def api_delete_users_all(req, env):
+    try:
+        res = await env.DB.prepare(
+            "DELETE FROM users"
+        ).run()
+        return ok({
+            "message": "all users deleted!"
+        })
+    except Exception as e:
+        return err(f"something went wrong: {e}", 500)
 
 async def _dispatch(request, env):
     path = urlparse(request.url).path
@@ -120,6 +131,9 @@ async def _dispatch(request, env):
     if path == "/users" and method == "GET":
         return await api_get_users(request, env)
     
+    if path == "/delete-all" and method == "DELETE":
+        return await api_delete_users_all(request, env)
+
 async def on_fetch(request, env):
     try:
         return await _dispatch(request, env)
