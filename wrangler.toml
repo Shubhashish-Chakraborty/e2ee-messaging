@@ -7,3 +7,9 @@ compatibility_flags = ["python_workers"]
 binding = "DB"
 database_name = "e2ee_db_dev"
 database_id = "9330e79a-f961-48f1-8870-29f904c9e49b"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+html_handling = "auto-trailing-slash"

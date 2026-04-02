@@ -47,7 +47,7 @@ async def _dispatch(request, env):
     if method == "OPTIONS":
         return Response("", status=204, headers=_CORS)
     
-    if path == "/" and method == "GET":
+    if path == "/test" and method == "GET":
         return await api_home(request, env)
     
 async def on_fetch(request, env):
