@@ -4,7 +4,7 @@ import hmac as _hmac
 import json
 import traceback
 from workers import Response
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 
 _CORS = {
@@ -168,18 +168,84 @@ async def api_get_users(req, env):
     
     except Exception as e:
         return err(f"something went wrong: {e}", 500)
+
+async def api_get_messages(req, env):
+    user = verifyToken(req.headers.get("Authorization"), env.JWT_SECRET)
+    if not user: return err("Authentication required", 401)
+
+    params = parse_qs(urlparse(req.url).query)
+    chat_with = (params.get("chat_with") or [""])[0]
+
+    if not chat_with:
+        return err("chat_with parameter is required")
+
+    res = await env.DB.prepare(
+        "SELECT sender, receiver, iv, ciphertext, timestamp FROM messages "
+        "WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?) "
+        "ORDER BY timestamp ASC"
+    ).bind(user["username"], chat_with, chat_with, user["username"]).all()
+
+    messages = res.results.to_py() if res.results else []
+
+    return ok({"messages": messages})
+
+
+async def api_post_message(req, env):
+    user = verifyToken(req.headers.get("Authorization"), env.JWT_SECRET)
+    if not user: return err("Authentication required", 401)
+
+    body, bad_resp = await parse_json_object(req)
+    if bad_resp: return bad_resp
+
+    receiver   = body.get("receiver")
+    iv         = body.get("iv")
+    ciphertext = body.get("ciphertext")
+
+    if not receiver or not iv or not ciphertext:
+        return err("receiver, iv, and ciphertext are required")
+
+    try:
+        await env.DB.prepare(
+            "INSERT INTO messages (sender, receiver, iv, ciphertext) VALUES (?, ?, ?, ?)"
+        ).bind(user["username"], receiver, iv, ciphertext).run()
+    except Exception as e:
+        return err(f"Failed to save message: {e}", 500)
+
+    return ok(None, "Message secured and stored")
+
+
+async def api_analyse(req, env):
+    users_res = await env.DB.prepare("SELECT id, username, githubUrl, password_hash, created_at FROM users").all()
+    msgs_res = await env.DB.prepare("SELECT * FROM messages ORDER BY timestamp DESC LIMIT 50").all()
+    
+    users = users_res.results.to_py() if users_res.results else []
+    msgs = msgs_res.results.to_py() if msgs_res.results else []
+
+    return ok({"users": users, "messages": msgs}, "Raw DB dump")
     
 # only for development purposes!
-async def api_delete_all_users(req, env):
-    try:
-        res = await env.DB.prepare(
-            "DELETE FROM users"
-        ).run()
-        return ok({
-            "message": "all users deleted!"
-        })
-    except Exception as e:
-        return err(f"something went wrong: {e}", 500)
+
+# async def api_delete_all_users(req, env):
+#     try:
+#         res = await env.DB.prepare(
+#             "DELETE FROM users"
+#         ).run()
+#         return ok({
+#             "message": "all users deleted!"
+#         })
+#     except Exception as e:
+#         return err(f"something went wrong: {e}", 500)
+
+# async def api_delete_all_messages(req, env):
+#     try:
+#         res = await env.DB.prepare(
+#             "DELETE FROM messages"
+#         ).run()
+#         return ok({
+#             "message": "all messages deleted!"
+#         })
+#     except Exception as e:
+#         return err(f"something went wrong: {e}", 500)
 
 async def _dispatch(request, env):
     path = urlparse(request.url).path
@@ -199,9 +265,23 @@ async def _dispatch(request, env):
     
     if path == "/users" and method == "GET":
         return await api_get_users(request, env)
+
+    if path in ("/api/messages", "/api/messages/") and method == "GET":
+        return await api_get_messages(request, env)
+
+    if path in ("/api/messages", "/api/messages/") and method == "POST":
+        return await api_post_message(request, env)
     
-    if path == "/delete-all" and method == "DELETE":
-        return await api_delete_all_users(request, env)
+    if path == "/api/analyse" and method == "GET":
+        return await api_analyse(request, env)
+    
+    # if path == "/delete-all-users" and method == "DELETE":
+    #     return await api_delete_all_users(request, env)
+
+    # if path == "/delete-all-messages" and method == "DELETE":
+    #     return await api_delete_all_messages(request, env)
+
+    return err("Not found", 404)
 
 async def on_fetch(request, env):
     try:

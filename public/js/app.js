@@ -14,7 +14,7 @@
 
     const USERS_API_URL = '/users';
 
-    // Navbar auth buttons 
+    // Navbar auth buttons
     function renderNavButtons() {
         if (Auth.isLoggedIn()) {
             const user = Auth.getUser();
@@ -22,21 +22,24 @@
                 <span class="text-slate-400 text-sm hidden sm:inline mr-2">
                     Hi, <strong class="text-cyan-400">${escapeHtml(user.username)}</strong>
                 </span>
-                <button id="btn-chats" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-cyan-900/40 border border-cyan-800/60 text-cyan-400 text-sm font-medium hover:bg-cyan-800/60 transition-colors">
+                <a href="/analyse.html" id="btn-analyse" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-violet-900/40 border border-violet-800/60 text-violet-400 text-sm font-medium hover:bg-violet-800/60 transition-colors">
+                    <i class="fas fa-database"></i> <span class="hidden sm:inline">Analyse</span>
+                </a>
+                <a href="/chats.html" id="btn-chats" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-cyan-900/40 border border-cyan-800/60 text-cyan-400 text-sm font-medium hover:bg-cyan-800/60 transition-colors">
                     <i class="fas fa-comments"></i> <span class="hidden sm:inline">My Chats</span>
-                </button>
+                </a>
                 <button id="btn-logout" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-[#21262d] border border-[#30363d] text-slate-300 text-sm font-medium hover:bg-[#30363d] hover:text-white transition-colors shadow-sm cursor-pointer z-50 relative pointer-events-auto">
                     <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline">Logout</span>
                 </button>
             `;
-            document.getElementById('btn-chats').addEventListener('click', () => {
-                alert('Under development!');
-            });
             document.getElementById('btn-logout').addEventListener('click', () => {
                 Auth.logout();
             });
         } else {
             navActions.innerHTML = `
+                <a href="/analyse.html" class="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg bg-violet-900/40 border border-violet-700/60 text-violet-400 text-sm font-medium hover:bg-violet-800/60 transition-colors">
+                    <i class="fas fa-database"></i> <span class="hidden sm:inline">Analyse</span>
+                </a>
                 <a href="/signup.html" class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors shadow shadow-cyan-900/30">
                     <i class="fas fa-user-plus hidden sm:inline"></i> Sign Up
                 </a>
@@ -47,7 +50,7 @@
         }
     }
 
-    // Status helper 
+    // Status helper
     function updateStatus(type, message, loading = false) {
         if (loading) {
             statusMsg.innerHTML = `<i class="fas fa-spinner fa-spin mr-2 text-cyan-400"></i>${message}`;
@@ -64,7 +67,7 @@
         }
     }
 
-    // Skeleton loaders 
+    // Skeleton loaders
     function showSkeletons() {
         usersGrid.innerHTML = '';
         emptyStateDiv.classList.add('hidden');
@@ -81,6 +84,7 @@
                     </div>
                 </div>
                 <div class="mt-4 h-8 bg-[#21262d] rounded animate-pulse"></div>
+                <div class="mt-3 h-9 bg-[#21262d] rounded animate-pulse"></div>
             `;
             usersGrid.appendChild(sk);
         }
@@ -109,11 +113,28 @@
         emptyStateDiv.classList.add('hidden');
         errorAlert.classList.add('hidden');
 
+        const isLoggedIn   = Auth.isLoggedIn();
+        const currentUser  = isLoggedIn ? Auth.getUser() : null;
+
         users.forEach((user, idx) => {
             const { id, username, githubUrl, public_key } = user;
-            const safeUser = username || `User_${id}`;
+            const safeUser  = username || `User_${id}`;
             const avatarSrc = getAvatarUrl(githubUrl, safeUser);
             const shortKey  = formatKey(public_key);
+            const isOwnCard = isLoggedIn && currentUser.username === safeUser;
+
+            // Message button — only shown when logged in and not own card
+            const messageBtnHtml = (isLoggedIn && !isOwnCard)
+                ? `<button class="msg-btn w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-cyan-600/20 border border-cyan-600/40 text-cyan-400 text-sm font-medium hover:bg-cyan-600/40 hover:border-cyan-500 transition-all duration-150">
+                       <i class="fas fa-lock text-xs"></i> Send Message
+                   </button>`
+                : (isOwnCard
+                    ? `<div class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-800/40 border border-[#30363d] text-slate-500 text-sm">
+                           <i class="fas fa-user text-xs"></i> This is you
+                       </div>`
+                    : `<a href="/login.html" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#21262d] border border-[#30363d] text-slate-400 text-sm font-medium hover:bg-[#30363d] transition-all duration-150">
+                           <i class="fas fa-sign-in-alt text-xs"></i> Login to Message
+                       </a>`);
 
             const card = document.createElement('div');
             card.className = 'bg-[#161b22] border border-[#30363d] rounded-2xl p-5 flex flex-col gap-4 hover:-translate-y-1 hover:border-cyan-700/60 hover:shadow-lg hover:shadow-cyan-900/10 transition-all duration-200 animate-fade-in group';
@@ -137,16 +158,26 @@
                 </div>
                 <div class="flex items-center justify-between gap-2 bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 overflow-hidden">
                     <div class="flex items-center gap-2 overflow-hidden">
+                        PublicKey:
                         <i class="fas fa-key text-amber-500/80 text-xs"></i>
                         <span class="text-xs font-mono text-slate-400 truncate" title="${escapeHtml(public_key || '')}">${escapeHtml(shortKey)}</span>
                     </div>
                 </div>
+                ${messageBtnHtml}
             `;
+
+            // Attach click handler for message button
+            if (isLoggedIn && !isOwnCard) {
+                card.querySelector('.msg-btn').addEventListener('click', () => {
+                    window.location.href = `/chats.html?with=${encodeURIComponent(safeUser)}`;
+                });
+            }
+
             usersGrid.appendChild(card);
         });
     }
 
-    // Fetching users 
+    // Fetch users
     async function fetchUsers() {
         showSkeletons();
         updateStatus('info', 'Fetching users...', true);
@@ -176,7 +207,7 @@
         }
     }
 
-    // XSS guard 
+    // XSS guard
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
