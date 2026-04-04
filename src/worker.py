@@ -58,6 +58,38 @@ def HASH_PASSWORD(password: str, username: str, pepper: str) -> str:
     )
     return base64.b64encode(dk).decode("ascii")
 
+def verifyPassword(password: str, stored: str, username: str, pepper: str) -> bool:
+    return HASH_PASSWORD(password, username, pepper) == stored
+
+
+def createToken(uid: str, username: str, secret: str) -> str:
+    payload = base64.b64encode(
+        json.dumps({"id": uid, "username": username}).encode()
+    ).decode("ascii")
+    sig = _hmac.new(
+        secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    return f"{payload}.{sig}"
+
+def verifyToken(raw: str, secret: str):
+    if not raw:
+        return None
+    try:
+        token = raw.removeprefix("Bearer ").strip()
+        dot   = token.rfind(".")
+        if dot == -1:
+            return None
+        p, sig = token[:dot], token[dot + 1:]
+        exp = _hmac.new(
+            secret.encode("utf-8"), p.encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+        if not _hmac.compare_digest(sig, exp):
+            return None
+        padding = (4 - len(p) % 4) % 4
+        return json.loads(base64.b64decode(p + "=" * padding).decode("utf-8"))
+    except Exception:
+        return None
+
 ########
 
 async def api_home(request, env):
@@ -95,6 +127,35 @@ async def api_signup(req, env):
 
     return ok(None, f"{username} Successfully Registered!")
 
+async def api_login(req, env):
+    body, badResponse = await parse_json_object(req)
+    if badResponse:
+        return badResponse
+
+    username = body.get("username")
+    password = body.get("password")
+    if not username or not password:
+        return err("username and password: something is wrong or missing")
+    
+    # check:
+    res = await env.DB.prepare(
+        "SELECT id, username, password_hash, public_key FROM users WHERE username=?"
+    ).bind(username).first()
+
+    if not res:
+        return err("Invalid Credentials!", 401)
+    
+    row = res.to_py()
+    
+    if not verifyPassword(password, row["password_hash"], username, env.PEPPER):
+        return err("Invalid credentials", 401)
+
+    token = createToken(str(row["id"]), username, env.JWT_SECRET)
+    return ok({
+        "token": token,
+        "user": {"id": row["id"], "username": username, "public_key": row["public_key"]}
+    }, f"{username} Successfully Logged IN!")
+
 async def api_get_users(req, env):
     try:
         res = await env.DB.prepare(
@@ -131,6 +192,9 @@ async def _dispatch(request, env):
     
     if path == "/api/auth/signup" and method == "POST":
         return await api_signup(request, env)
+
+    if path == "/api/auth/login" and method == "POST":
+        return await api_login(request, env)
     
     if path == "/users" and method == "GET":
         return await api_get_users(request, env)
