@@ -169,7 +169,8 @@ async def api_get_users(req, env):
     except Exception as e:
         return err(f"something went wrong: {e}", 500)
     
-async def api_delete_users_all(req, env):
+# only for development purposes!
+async def api_delete_all_users(req, env):
     try:
         res = await env.DB.prepare(
             "DELETE FROM users"
@@ -200,7 +201,7 @@ async def _dispatch(request, env):
         return await api_get_users(request, env)
     
     if path == "/delete-all" and method == "DELETE":
-        return await api_delete_users_all(request, env)
+        return await api_delete_all_users(request, env)
 
 async def on_fetch(request, env):
     try:

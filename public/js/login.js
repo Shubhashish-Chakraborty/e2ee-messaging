@@ -1,5 +1,3 @@
-// login.js — handles login form logic
-
 (function () {
     // Redirect if already logged in
     if (Auth.isLoggedIn()) {

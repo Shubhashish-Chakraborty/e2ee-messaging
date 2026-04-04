@@ -1,7 +1,5 @@
-// app.js — home page logic
-
 (function () {
-    // ── DOM refs ──────────────────────────────────────────────────────────────
+    // DOM refs
     const usersGrid       = document.getElementById('users-grid');
     const emptyStateDiv   = document.getElementById('empty-state');
     const errorAlert      = document.getElementById('error-alert');
@@ -16,7 +14,7 @@
 
     const USERS_API_URL = '/users';
 
-    // ── Navbar auth buttons ───────────────────────────────────────────────────
+    // Navbar auth buttons 
     function renderNavButtons() {
         if (Auth.isLoggedIn()) {
             const user = Auth.getUser();
@@ -49,7 +47,7 @@
         }
     }
 
-    // ── Status helper ─────────────────────────────────────────────────────────
+    // Status helper 
     function updateStatus(type, message, loading = false) {
         if (loading) {
             statusMsg.innerHTML = `<i class="fas fa-spinner fa-spin mr-2 text-cyan-400"></i>${message}`;
@@ -66,7 +64,7 @@
         }
     }
 
-    // ── Skeleton loaders ──────────────────────────────────────────────────────
+    // Skeleton loaders 
     function showSkeletons() {
         usersGrid.innerHTML = '';
         emptyStateDiv.classList.add('hidden');
@@ -88,7 +86,6 @@
         }
     }
 
-    // ── Avatar URL ────────────────────────────────────────────────────────────
     function getAvatarUrl(githubUrl, username) {
         if (githubUrl) {
             const m = githubUrl.match(/github\.com\/([^/?#]+)/i);
@@ -97,13 +94,11 @@
         return `https://ui-avatars.com/api/?background=0891b2&color=fff&rounded=true&size=120&name=${encodeURIComponent(username || 'U')}&bold=true`;
     }
 
-    // ── Key formatter ─────────────────────────────────────────────────────────
     function formatKey(pk) {
         if (!pk || pk.length <= 16) return pk || '—';
         return `${pk.substring(0, 10)}...${pk.substring(pk.length - 8)}`;
     }
 
-    // ── Render cards ──────────────────────────────────────────────────────────
     function renderUsers(users) {
         usersGrid.innerHTML = '';
         if (!users || users.length === 0) {
@@ -151,7 +146,7 @@
         });
     }
 
-    // ── Fetch users ───────────────────────────────────────────────────────────
+    // Fetching users 
     async function fetchUsers() {
         showSkeletons();
         updateStatus('info', 'Fetching users...', true);
@@ -181,13 +176,12 @@
         }
     }
 
-    // ── XSS guard ─────────────────────────────────────────────────────────────
+    // XSS guard 
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────────
     function init() {
         renderNavButtons();
         fetchUsers();

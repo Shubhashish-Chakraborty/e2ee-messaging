@@ -1,7 +1,5 @@
-// signup.js — handles signup form logic
-
 (function () {
-    // Redirect if already logged in
+    // Redirect if already logged in!!
     if (Auth.isLoggedIn()) {
         window.location.href = '/';
         return;

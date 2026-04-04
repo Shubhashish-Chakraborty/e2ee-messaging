@@ -1,5 +1,4 @@
-// auth.js — shared auth utilities used across all pages
-
+// shared auth utilities used across all pages
 const Auth = {
     TOKEN_KEY: 'e2ee_token',
     USER_KEY:  'e2ee_user',
