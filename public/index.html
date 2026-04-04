@@ -1,14 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E2EE Messaging</title>
+    <title>Not your real data with us!</title>
+    <meta name="description" content="End-to-End Encrypted Messaging — browse registered users securely.">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0d1117',
+                        darkCard: '#161b22',
+                        darkBorder: '#30363d'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #0d1117; color: #e6edf3; }
+        
+        .animate-fade-in { 
+            animation: fadeIn 0.3s ease-out both; 
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .status-dot.loading { background-color: #fbbf24; animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .status-dot.success { background-color: #34d399; }
+        .status-dot.error { background-color: #f87171; }
+        .status-dot.idle { background-color: #64748b; }
+    </style>
 </head>
-<body>
-    <h1 class="text-center bg-cyan-300 text-3xl">
-        hello world!
-    </h1>
+<body class="min-h-screen font-sans antialiased">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 bg-[#0d1117]/80 backdrop-blur-md border-b border-[#30363d]">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex-1 hidden sm:block"></div>
+            
+            <div class="flex items-center gap-2 font-bold text-[1.05rem] text-slate-100 whitespace-nowrap">
+                <i class="fas fa-lock text-cyan-400"></i>
+                End-to-End Encrypted Messaging
+            </div>
+
+            <div class="flex-1 flex justify-end gap-3 items-center" id="nav-actions">
+                <!-- Injected by app.js -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="max-w-6xl mx-auto px-4 py-10">
+
+        <div class="text-xl md:text-3xl text-center font-bold mb-5 animate-bounce">
+            Find your peers and start the conversation!
+        </div>
+
+        <!-- Status Panel -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div class="flex items-center gap-3">
+                <div id="status-indicator" class="status-dot loading"></div>
+                <p id="status-message" class="text-sm text-slate-400 font-medium">
+                    <i class="fas fa-spinner fa-spin mr-2 text-cyan-400"></i>Fetching users...
+                </p>
+            </div>
+            <button id="refresh-btn" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#161b22] border border-[#30363d] text-sm font-medium text-slate-300 hover:bg-[#21262d] hover:text-white transition-all shadow-sm">
+                <i class="fas fa-rotate-right"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Users Grid -->
+        <div id="users-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center p-14 text-center bg-[#161b22] border border-dashed border-[#30363d] rounded-2xl shadow-sm">
+            <div class="h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-user-slash text-2xl text-slate-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-200 mb-2">No users found</h3>
+            <p class="text-slate-400 text-sm mb-6 max-w-[280px]">The directory is empty. Check your backend endpoint or try refreshing.</p>
+            <button id="empty-retry-btn" class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors shadow-lg shadow-cyan-900/20">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="error-alert" class="hidden mt-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-4">
+            <div class="p-1">
+                <i class="fas fa-circle-exclamation text-red-400 text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <h4 id="error-text" class="text-sm font-semibold text-red-400">Something went wrong</h4>
+                <p id="error-detail" class="text-sm text-red-400/80 mt-1">Unable to load users</p>
+            </div>
+            <button id="dismiss-error" class="text-red-400/60 hover:text-red-400 p-1 transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/app.js"></script>
 </body>
 </html>
