@@ -5,8 +5,8 @@ compatibility_flags = ["python_workers"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "e2ee_db_dev"
-database_id = "9330e79a-f961-48f1-8870-29f904c9e49b"
+database_name = "e2ee-convoroom"
+database_id = "6607da5e-9cb3-4ad9-97bd-7ff87168cc62"
 
 [assets]
 directory = "./public"
