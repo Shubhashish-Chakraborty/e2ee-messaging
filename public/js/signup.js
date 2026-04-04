@@ -96,7 +96,7 @@
             // Save private key locally, scoped to the username
             localStorage.setItem(`e2ee_privateKey_${username}`, privateKey);
 
-            setSuccess(`🎉 ${json.message || 'Account created!'} Redirecting to login...`);
+            setSuccess(`${json.message || 'Account created!'} Redirecting to login...`);
             setTimeout(() => { window.location.href = '/login.html'; }, 1800);
         } catch (err) {
             setError(err.message || 'Something went wrong');
